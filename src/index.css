@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-slate-50 text-slate-900;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold;
+  }
+  button, [role="button"], .cursor-pointer {
+    @apply transition-all duration-100 active:translate-y-1 active:scale-[0.98] cursor-pointer;
+  }
+  
+  /* Only apply 3D shadow to buttons with background or specific shadow classes */
+  button.bg-blue-500, 
+  button.bg-white, 
+  button.bg-slate-800,
+  button.shadow-lg,
+  .btn-3d {
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  }
+
+  button.bg-blue-500:active, 
+  button.bg-white:active, 
+  button.bg-slate-800:active,
+  button.shadow-lg:active,
+  .btn-3d:active {
+    box-shadow: 0 1px 0 rgba(0,0,0,0.1);
+  }
+}
+
+/* 3D Button Effect - Specific Class */
+.btn-3d {
+  position: relative;
+  transition: all 0.1s;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+}
+
+.btn-3d:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+}
+
+.card-3d {
+  @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl active:translate-y-1 active:scale-[0.98] active:shadow-inner;
+}
