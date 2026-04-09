@@ -1666,55 +1666,63 @@ const useTTS = () => {
     try {
       setIsPlaying(true);
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const voiceName = 'Kore'; 
       
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Read this clearly: ${text}` }] }],
+        model: "gemini-1.5-flash",
+        contents: [{ role: 'user', parts: [{ text: `Read this text clearly in ${lang === 'ar' ? 'Arabic' : lang === 'fr' ? 'French' : 'English'}: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName },
-            },
-          },
-        },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } }
+          }
+        }
       });
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (base64Audio) {
-        const audioSrc = `data:audio/wav;base64,${base64Audio}`;
-        if (audioRef.current) {
-          audioRef.current.src = audioSrc;
-          audioRef.current.play();
-        } else {
-          const audio = new Audio(audioSrc);
-          audioRef.current = audio;
-          audio.play();
-          audio.onended = () => setIsPlaying(false);
-        }
+        const audioSrc = `data:audio/mp3;base64,${base64Audio}`;
+        const audio = new Audio();
+        
+        audio.oncanplaythrough = () => {
+          audio.play().catch(e => {
+            console.error("Audio play failed:", e);
+            setIsPlaying(false);
+          });
+        };
+
+        audio.onerror = (e) => {
+          console.error("Audio load error:", e);
+          setIsPlaying(false);
+          // Fallback to browser TTS if audio fails
+          fallbackToBrowserTTS(text, lang);
+        };
+
+        audio.onended = () => setIsPlaying(false);
+        
+        audioRef.current = audio;
+        audio.src = audioSrc;
+        audio.load();
       } else {
         throw new Error("No audio data received");
       }
     } catch (error) {
       console.warn("Gemini TTS failed, falling back to browser speech synthesis:", error);
-      
-      // Fallback to browser's native SpeechSynthesis
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Map app language to BCP 47 language tags
-      const langMap: Record<Language, string> = {
-        'en': 'en-US',
-        'fr': 'fr-FR',
-        'ar': 'ar-SA'
-      };
-      utterance.lang = langMap[lang] || 'en-US';
-      
-      utterance.onend = () => setIsPlaying(false);
-      utterance.onerror = () => setIsPlaying(false);
-      
-      window.speechSynthesis.speak(utterance);
+      fallbackToBrowserTTS(text, lang);
     }
+  };
+
+  const fallbackToBrowserTTS = (text: string, lang: Language) => {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const langMap: Record<Language, string> = {
+      'en': 'en-US',
+      'fr': 'fr-FR',
+      'ar': 'ar-SA'
+    };
+    utterance.lang = langMap[lang] || 'en-US';
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => setIsPlaying(false);
+    window.speechSynthesis.speak(utterance);
   };
 
   return { speak, isPlaying };
